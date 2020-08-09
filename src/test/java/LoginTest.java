@@ -20,29 +20,26 @@ public class LoginTest {
   }
 
   @Test
-  public void createIssueTest() {
+  public void addCommentToTicketTest() {
     driver.get("https://jira.hillel.it/secure/Dashboard.jspa");
     driver.findElement(By.id("login-form-username")).sendKeys("IrinaChub");
     driver.findElement(By.id("login-form-password")).sendKeys("IrinaChub");
     driver.findElement(By.id("login")).click();
 
+    try {
+      Thread.sleep(3000);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+    assertTrue(driver.findElement(By.id("header-details-user-fullname")).isDisplayed());
+
     //Explicit Wait for element to appear
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30).getSeconds());
-    boolean elementIsPresent = wait.until(presenceOfElementLocated(By.id("create_link"))).isEnabled();
+    boolean elementIsPresent = wait.until(presenceOfElementLocated(By.id("quickSearchInput"))).isEnabled();
     assertEquals(elementIsPresent, true);
 
-    try {
-      Thread.sleep(3000);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    }
-
-    driver.findElement(By.id("create_link")).click();
-
-    wait.until(presenceOfElementLocated(By.id("project-field"))).isDisplayed();
-    driver.findElement(By.id("project-field")).clear();
-    driver.findElement(By.id("project-field")).sendKeys("Webinar (WEBINAR)");
-    driver.findElement(By.id("project-field")).sendKeys(Keys.TAB);
+    driver.findElement(By.id("quickSearchInput")).sendKeys("WEBINAR-12467");
+    driver.findElement(By.id("quickSearchInput")).sendKeys(Keys.ENTER);
 
     try {
       Thread.sleep(3000);
@@ -50,32 +47,31 @@ public class LoginTest {
       e.printStackTrace();
     }
 
-    driver.findElement(By.id("issuetype-field")).clear();
-    driver.findElement(By.id("issuetype-field")).sendKeys("Task");
-    driver.findElement(By.id("issuetype-field")).sendKeys(Keys.TAB);
+    assertTrue(driver.findElement(By.xpath("//*[@id='stalker']//child::a[@data-issue-key='WEBINAR-12467']")).isDisplayed());
 
-    try {
-      Thread.sleep(3000);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    }
-    driver.findElement(By.id("summary")).sendKeys("summary");
-    driver.findElement(By.id("reporter-field")).clear();
-    driver.findElement(By.id("reporter-field")).sendKeys("IrinaChub");
-    driver.findElement(By.id("reporter-field")).sendKeys(Keys.TAB);
+    wait.until(presenceOfElementLocated(By.xpath("//*[@id='issue-tabs']//child::*[@id='comment-tabpanel']"))).isEnabled();
+    driver.findElement(By.xpath("//*[@id='issue-tabs']//child::*[@id='comment-tabpanel']")).click();
 
-    wait.until(presenceOfElementLocated(By.xpath("//*[@id='description-wiki-edit']//child::a[text()='Text']"))).isEnabled();
-    driver.findElement(By.xpath("//*[@id='description-wiki-edit']//child::a[text()='Text']")).click();
-    driver.findElement(By.id("description")).sendKeys("some text of description");
+    wait.until(presenceOfElementLocated(By.id("footer-comment-button"))).isEnabled();
+    driver.findElement(By.id(("footer-comment-button"))).click();
+    driver.findElement(By.id("comment")).sendKeys("some comments");
+    driver.findElement(By.id("issue-comment-add-submit")).click();
 
-    driver.findElement(By.id("create-issue-submit")).click();
+    WebElement addCommentTest =
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath(("//*[@id='issue_actions_container']//child::*[@class='action-body flooded']"))));
+    wait.until(ExpectedConditions.textToBePresentInElement(addCommentTest, "some comments"));
 
-    //Explicit Wait for element to appear
-    boolean popUpIsPresent = wait.until(presenceOfElementLocated(By.className("aui-message-success"))).isDisplayed();
-    assertEquals(popUpIsPresent, true);
+    WebElement popUpDeleteCommentTest =
+        driver.findElement(By.xpath("//*[@id='issue_actions_container']//child::*[@class='action-links']//child::*[@class='delete-comment issue-comment-action']"));
+    popUpDeleteCommentTest.click();
 
-    WebElement projectNameIsPresent = wait.until(ExpectedConditions.visibilityOfElementLocated(By.className("aui-message-success")));
-    wait.until(ExpectedConditions.textToBePresentInElement(projectNameIsPresent, "WEBINAR"));
+    boolean deleteDialogIsPresent = wait.until(presenceOfElementLocated(By.xpath("//*[@id='delete-comment-dialog']//child::*[@id='comment-delete-submit']"))).isEnabled();
+    assertEquals(deleteDialogIsPresent, true);
+    driver.findElement(By.xpath("//*[@id='delete-comment-dialog']//child::*[@id='comment-delete-submit']")).click();
+
+    WebElement deletedCommentTest = wait.
+        until(ExpectedConditions.visibilityOfElementLocated(By.xpath(("//*[@id='issue_actions_container']//child::*[contains(text(), 'There are no comments yet on this issue.')]"))));
+    wait.until(ExpectedConditions.textToBePresentInElement(deletedCommentTest, "There are no comments yet on this issue."));
   }
 
   @AfterMethod
